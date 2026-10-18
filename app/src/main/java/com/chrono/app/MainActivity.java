@@ -11,7 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String URL_RPI = "http://192.168.1.X/chrono/index.php"; 
+    private static final String URL_RPI = "http://192.168.0.151:8888/index.php"; 
     private WebView webView;
     private boolean isChronoRunning = false;
 
@@ -31,12 +31,10 @@ public class MainActivity extends AppCompatActivity {
         webView.loadUrl(URL_RPI);
     }
 
-    // Intercepte les signaux clavier/volume envoyés par les boutons Bluetooth Amathings
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
             
-            // Mode bascule automatique : 1er appui = Départ, appui suivant = Fin
             if (!isChronoRunning) {
                 isChronoRunning = true;
                 notifyWebPage("start");
@@ -45,15 +43,17 @@ public class MainActivity extends AppCompatActivity {
                 notifyWebPage("stop");
             }
             
-            return true; // Empêche le volume du téléphone de varier
+            return true; 
         }
         return super.onKeyDown(keyCode, event);
     }
 
     private void notifyWebPage(String action) {
         if (webView != null) {
-            webView.evaluateJavascript("javascript:if(typeof onChronoTrigger === 'function'){ onChronoTrigger('" + action + "'); }", null);
-            Toast.makeText(this, "Chrono -> " + action.toUpperCase(), Toast.LENGTH_SHORT).show();
+            runOnUiThread(() -> {
+                webView.evaluateJavascript("javascript:if(typeof window.onChronoTrigger === 'function'){ window.onChronoTrigger('" + action + "'); }", null);
+                Toast.makeText(this, "Chrono -> " + action.toUpperCase(), Toast.LENGTH_SHORT).show();
+            });
         }
     }
 }
