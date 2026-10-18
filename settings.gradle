@@ -12,5 +12,6 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "ChronoApp"
+
+rootProject.name = "chrono"
 include ':app'
