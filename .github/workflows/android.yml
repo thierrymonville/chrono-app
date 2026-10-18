@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK (Debug)
 
 on:
   push:
@@ -24,14 +24,11 @@ jobs:
         unzip -q gradle-8.7-bin.zip
         echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
-    - name: Verify Gradle Version
-      run: gradle -v
-
-    - name: Build APK with Gradle 8.7
-      run: gradle assembleRelease --stacktrace
+    - name: Build Debug APK with Gradle 8.7
+      run: gradle assembleDebug --stacktrace
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: app-release
-        path: app/build/outputs/apk/release/app-release-unsigned.apk
+        name: app-debug
+        path: app/build/outputs/apk/debug/app-debug.apk
