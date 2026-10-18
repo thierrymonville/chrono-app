@@ -21,7 +21,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String MAC_BLEU = "EE:ED:68:E1:35:89"; // Départ
     private static final String MAC_ROUGE = "ED:ED:4D:E5:2B";   // Fin
-    private static final String URL_RPI = "http://192.168.1.X/chrono/index.php"; // À adapter
+    private static final String URL_RPI = "http://192.168.1.X/chrono/index.php";
 
     private TextView txtStatus, txtChrono;
     private WebView webView;
