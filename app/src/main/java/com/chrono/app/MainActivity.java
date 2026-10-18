@@ -10,24 +10,22 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Button;
-import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String MAC_BLEU = "EE:ED:68:E1:35:89"; // Départ
-    private static final String MAC_ROUGE = "ED:ED:4D:E5:2B";   // Fin
-    private static final String URL_RPI = "http://192.168.1.X/chrono/index.php";
+    private static final String MAC_BLEU = "EE:ED:68:E1:35:89";  // Départ
+    private static final String MAC_ROUGE = "ED:ED:4D:E5:2B";    // Fin
+    private static final String URL_RPI = "http://192.168.1.X/chrono/index.php"; 
 
-    private TextView txtStatus, txtChrono;
     private WebView webView;
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothGatt gattBleu, gattRouge;
-    private long startTime = 0;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -35,13 +33,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        txtStatus = findViewById(R.id.txtStatus);
-        txtChrono = findViewById(R.id.txtChrono);
-        Button btnConnect = findViewById(R.id.btnConnect);
         webView = findViewById(R.id.webView);
 
+        WebSettings webSettings = webView.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+
         webView.setWebViewClient(new WebViewClient());
-        webView.getSettings().setJavaScriptEnabled(true);
         webView.loadUrl(URL_RPI);
 
         BluetoothManager bluetoothManager = getSystemService(BluetoothManager.class);
@@ -49,7 +47,8 @@ public class MainActivity extends AppCompatActivity {
             bluetoothAdapter = bluetoothManager.getAdapter();
         }
 
-        btnConnect.setOnClickListener(v -> checkPermissionsAndConnect());
+        // Vérifie les permissions et lance la connexion aux adresses MAC
+        checkPermissionsAndConnect();
     }
 
     private void checkPermissionsAndConnect() {
@@ -61,54 +60,54 @@ public class MainActivity extends AppCompatActivity {
             }, 1);
             return;
         }
-        connectDevices();
+        connectBleDevices();
     }
 
-    private void connectDevices() {
+    @SuppressLint("MissingPermission")
+    private void connectBleDevices() {
         if (bluetoothAdapter == null) return;
 
-        txtStatus.setText("Statut : Connexion en cours...");
-
-        BluetoothDevice deviceBleu = bluetoothAdapter.getRemoteDevice(MAC_BLEU);
-        BluetoothDevice deviceRouge = bluetoothAdapter.getRemoteDevice(MAC_ROUGE);
-
-        @SuppressLint("MissingPermission")
-        BluetoothGattCallback callbackBleu = new BluetoothGattCallback() {
-            @Override
-            public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-                if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    runOnUiThread(() -> txtStatus.setText("Bleu (Départ) Connecté"));
-                    startChrono();
+        // Récupération des appareils par leur adresse MAC respective
+        if (BluetoothAdapter.checkBluetoothAddress(MAC_BLEU)) {
+            BluetoothDevice deviceBleu = bluetoothAdapter.getRemoteDevice(MAC_BLEU);
+            gattBleu = deviceBleu.connectGatt(this, false, new BluetoothGattCallback() {
+                @Override
+                public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+                    if (newState == BluetoothProfile.STATE_CONNECTED) {
+                        notifyWebPage("start"); // Bouton Bleu -> Départ
+                    }
                 }
-            }
-        };
+            });
+        }
 
-        @SuppressLint("MissingPermission")
-        BluetoothGattCallback callbackRouge = new BluetoothGattCallback() {
-            @Override
-            public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-                if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    runOnUiThread(() -> txtStatus.setText("Rouge (Fin) Connecté"));
-                    stopChrono();
+        if (BluetoothAdapter.checkBluetoothAddress(MAC_ROUGE)) {
+            BluetoothDevice deviceRouge = bluetoothAdapter.getRemoteDevice(MAC_ROUGE);
+            gattRouge = deviceRouge.connectGatt(this, false, new BluetoothGattCallback() {
+                @Override
+                public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+                    if (newState == BluetoothProfile.STATE_CONNECTED) {
+                        notifyWebPage("stop"); // Bouton Rouge -> Fin
+                    }
                 }
-            }
-        };
-
-        gattBleu = deviceBleu.connectGatt(this, false, callbackBleu);
-        gattRouge = deviceRouge.connectGatt(this, false, callbackRouge);
+            });
+        }
     }
 
-    private void startChrono() {
-        startTime = System.currentTimeMillis();
-        runOnUiThread(() -> txtChrono.setText("CHRONO LANCÉ !"));
+    private void notifyWebPage(String action) {
+        if (webView != null) {
+            runOnUiThread(() -> {
+                webView.evaluateJavascript("javascript:if(typeof onChronoTrigger === 'function'){ onChronoTrigger('" + action + "'); }", null);
+                Toast.makeText(this, "MAC Trigger -> " + action.toUpperCase(), Toast.LENGTH_SHORT).show();
+            });
+        }
     }
 
-    private void stopChrono() {
-        long elapsed = System.currentTimeMillis() - startTime;
-        long seconds = (elapsed / 1000) % 60;
-        long millis = (elapsed % 1000) / 10;
-        long minutes = (elapsed / (1000 * 60)) % 60;
-        String timeStr = String.format("%02d:%02d.%02d", minutes, seconds, millis);
-        runOnUiThread(() -> txtChrono.setText(timeStr));
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        @SuppressLint("MissingPermission")
+        if (gattBleu != null) { gattBleu.close(); gattBleu = null; }
+        @SuppressLint("MissingPermission")
+        if (gattRouge != null) { gattRouge.close(); gattRouge = null; }
     }
 }
