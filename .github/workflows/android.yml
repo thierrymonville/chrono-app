@@ -18,14 +18,17 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-
-    - name: Generate Gradle Wrapper & Build APK
+    - name: Download and Install Gradle 8.7
       run: |
-        gradle wrapper --gradle-version 8.4
-        chmod +x gradlew
-        ./gradlew assembleRelease --stacktrace
+        wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
+        unzip -q gradle-8.7-bin.zip
+        echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
+
+    - name: Verify Gradle Version
+      run: gradle -v
+
+    - name: Build APK with Gradle 8.7
+      run: gradle assembleRelease --stacktrace
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
