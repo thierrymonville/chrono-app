@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PLAY_PAUSE) {
             
             if (!isChronoRunning) {
                 isChronoRunning = true;
@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
                 notifyWebPage("stop");
             }
             
-            return true; // Bloque l'action native du volume
+            return true; // Bloque l'action native du volume sur le téléphone
         }
         return super.onKeyDown(keyCode, event);
     }
