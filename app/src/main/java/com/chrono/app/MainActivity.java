@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
                 notifyWebPage("stop");
             }
             
-            return true; 
+            return true; // Bloque l'action native du volume
         }
         return super.onKeyDown(keyCode, event);
     }
